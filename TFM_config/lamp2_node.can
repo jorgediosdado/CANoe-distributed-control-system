@@ -1,0 +1,93 @@
+/*@!Encoding:1252*/
+includes
+{
+  
+}
+
+variables
+{
+  message lamp2msg_check checkmessage; 
+  
+  int lamp2nodenumber;
+  
+  byte lamp2up = 0;  
+  int lamppwm;
+  float lampposition = 45; //Defines the position of the lamp along the scan axis  
+  int carriage_position;
+  
+  //timer simulateNodeDown;
+  int nodeDownAt = 1;
+  
+  timer regularCheck;
+  int checkerPeriod = 10;
+}
+
+
+//First check, then initialize, then numbering
+on message mastermsg_check {
+  
+    write("Checking lamp");  
+    //Do appropriate checking. Hacer una funcion que es llamada tanto aquí, en el inicio, como cuando hago un regular check desde el propio nodo lámpara
+    checkmessage.check = 0x01;
+    output(checkmessage);  
+}
+
+
+on message mastermsg_init {
+  
+  if(this.initialize_system == 0x01)
+  {
+    lamp2up = 1;
+  } 
+}
+
+on message mastermsg_nodenumber {  
+  
+  if(this.nodenumberlamp2 !=0 && this.nodenumberlamp2 != lamp2nodenumber)
+  {    
+   lamp2nodenumber = this.nodenumberlamp2;   
+   write("lamp2 node number =  = %i",lamp2nodenumber);    
+  }   
+}
+
+
+on message carmsg_position
+{  
+  
+  carriage_position = this.carriage_position;
+  if(lamp2up == 1)  //Only if lamp is initialized lampUp
+  {      
+    if(abs(this.carriage_position - lampposition) < 10)  
+    {      
+      lamppwm = 0;
+      @lamp2pwm = lamppwm;
+    }
+    if(abs(this.carriage_position - lampposition) > 10)  
+    {      
+      lamppwm = 100;
+      @lamp2pwm = lamppwm;
+    }    
+  }  
+}
+
+on message mastermsg_stop
+{
+  if(this.stop_lamp2 ==1)
+  {
+    lamp2up = 0;
+  }
+}
+
+
+//El checking regular es trabajo de cada nodo individual, más que el master preguntando a cada nodo
+on timer regularCheck 
+{
+   //Do appropriate checking
+  if(0)
+  {
+    checkmessage.check =0;
+    output(checkmessage);    
+  }
+}
+
+

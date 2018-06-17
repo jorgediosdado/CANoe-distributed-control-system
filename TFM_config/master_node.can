@@ -1,0 +1,202 @@
+/*@!Encoding:1252*/
+includes
+{
+  
+}
+
+//Capa de aplicacion???
+
+
+variables
+{  
+  message mastermsg_init mastermsg;
+  message mastermsg_check masterchecks;
+  message mastermsg_nodenumber nodenumbermsg;
+  message mastermsg_stop stopnodes;               //This message is an array indicating the nodes that need to be stopped when it is sent. 
+  message mastermsg_P P1;
+  message mastermsg_I I1;
+  message mastermsg_D D1;
+  
+  message mastermsg_temp1 temperaturemsg;
+  
+  byte carriageNodeOK = 0; 
+  byte lamp1NodeOK = 0; //Cambiar esto, ponerlo a cero cuando retoque el nodo lampara 
+  byte lamp2NodeOK = 0;
+  byte allNodesOK = 0;
+  int idcounter = 0; 
+  
+  int nodenumber = 0;
+  int lamp1nodenumber;
+  int lamp2nodenumber;
+  int carriagenodenumber;
+  int checkTimerSeconds = 5;
+  
+    
+  //timer regularcheck;
+  mstimer nodeCheckTimer;    
+}
+
+on start{  
+  
+  check_nodes();                  //Send message to check alive nodes. 
+  setTimer(nodeCheckTimer,1000);  //Wait 1 second for all nodes to be able to respond   
+}
+
+//Check y numberación de los nodos de la red. La numeracion de los nodos de la red se hace en función del orden de conexión de los nodos a la red, con el fin de establecer un orden.
+//Podría ser otro... //Los nodos se numeran cuando el master recibe de cada nodo que está bien. EL master tiene conocimiento de lnumero de cada nodo en la red, y cada nodo por separado de su número. 
+
+on message carmsg_check{       
+  
+  if(this.check == 1)
+  {
+      carriageNodeOK =1;
+      nodenumber++;
+      carriagenodenumber = nodenumber;
+      nodenumbermsg.nodenumbercarriage = nodenumber;
+      output(nodenumbermsg);
+  }
+  
+   if(this.check == 0)
+  {
+      //If carriage falls into fault, all nodes are stopped. Same as in emergency stop. Because the carriage node is the most important one
+      carriageNodeOK =0;
+      stopnodes.finish_cycling = 1; 
+      output(stopnodes);
+  }
+}
+
+on message lamp1msg_check{           
+  
+  if(this.check == 1){
+    lamp1NodeOK =1;       
+    nodenumber ++;
+    lamp1nodenumber = nodenumber;
+    nodenumbermsg.nodenumberlamp1 = nodenumber;
+    output(nodenumbermsg);      
+  }
+  
+  if(this.check == 0)
+  {     
+      //Si el check de la lámpara no ha sido exitoso, se devuelve la info al máster que es quien decide qué hacer.
+      //De momento, el master ordena parar solo esa lámpara, pero puedo mandar otras cosas.    
+      lamp1NodeOK =0;
+      stopnodes.finish_cycling = 0;
+      stopnodes.stop_lamp1 = 1;
+      stopnodes.stop_lamp2 = 0;
+      output(stopnodes);
+  }
+}
+
+on message lamp2msg_check{           
+  
+  if(this.check == 1){
+    lamp2NodeOK =1;       
+    nodenumber ++;
+    lamp2nodenumber = nodenumber;
+    nodenumbermsg.nodenumberlamp2 = nodenumber;
+    output(nodenumbermsg);
+  }
+  if(this.check == 0)
+  {     
+      //Si el check de la lámpara no ha sido exitoso, se devuelve la info al máster que es quien decide qué hacer.
+      //De momento, el master ordena parar solo esa lámpara, pero puedo mandar otras cosas.    
+      lamp2NodeOK =0;
+      stopnodes.finish_cycling = 0;
+      stopnodes.stop_lamp1 = 0;
+      stopnodes.stop_lamp2 = 1;
+      output(stopnodes);
+  }
+}
+
+//Checking al inicio
+on timer nodeCheckTimer{
+  
+ write("node check timer up");
+ 
+ if(carriageNodeOK == 1 || lamp1NodeOK == 1 || lamp2NodeOK == 1)
+ {
+   allNodesOK = 1;
+   write("Todos nodos OK");
+ }
+  
+ if(carriageNodeOK == 0 || lamp1NodeOK == 0 || lamp2NodeOK == 0)        
+  {  
+    allNodesOK = 0;    
+    write("algún nodo no está OK"); //Y aquí, decidir qué se hace, si se lanza el sistema mandando el mensaje init o no  
+ }
+}
+
+
+on envVar carriage_on
+{        
+   if(@this == 1 && allNodesOK == 1)//Si nodos OK, mando el mensaje de iniciar movimiento de carro
+    {    
+    mastermsg.velocity_carriage = 10;
+    mastermsg.cycles            = 4;
+    mastermsg.initialize_system = 1;
+    output(mastermsg);     
+    }
+    
+   if(@this==0 || allNodesOK == 0)//si paro el sistema, o doy a emergencia, envio mensaje de stop. Todos los nodos se paran. 
+    {          
+      stopnodes.finish_cycling = 1;   
+      output(stopnodes);  
+    }
+}
+
+on envVar P_lamp1
+{        
+   P1.P = @this;
+   output(P1);
+}
+on envVar I_lamp1
+{        
+   I1.I = @this;
+   output(I1);
+}
+on envVar D_lamp1
+{        
+   D1.D = @this;
+   output(D1);
+}
+
+
+on envVar emergencyStop 
+{
+  if(@this == 1)   
+  {
+    //Si hay una emergencia, se paran todos los nodos
+    stopnodes.stop_lamp1 = 1;
+    stopnodes.stop_lamp2 = 1;
+    stopnodes.finish_cycling = 1;   
+    output(stopnodes);  
+  }
+}
+
+
+
+on envVar targetTemp1{  
+  temperaturemsg.target_temperature1 = @this;
+  output(temperaturemsg);
+}
+
+
+
+void check_nodes()
+{   
+   masterchecks.check = 1;   
+   output(masterchecks);
+}
+
+on message carmsg_finish_cycling
+{
+  if(this.finish_cycling ==1)
+  {
+    
+    stopnodes.stop_lamp1 = 1;
+    stopnodes.stop_lamp2 = 1;
+    stopnodes.finish_cycling = 1;   
+    output(stopnodes);                  
+  }
+}
+

@@ -1,0 +1,132 @@
+VERSION ""
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: carriage lamp1_subsystem master lamp2_subsystem
+VAL_TABLE_ switch_positions 1 "on" 0 "off" ;
+
+
+BO_ 3221225472 VECTOR__INDEPENDENT_SIG_MSG: 0 Vector__XXX
+ SG_ pwm_signal : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ temp_zone2 : 0|8@1+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 15 mastermsg_D: 4 Vector__XXX
+ SG_ D : 0|32@1- (1,0) [0|0] "" Vector__XXX
+
+BO_ 14 mastermsg_I: 4 Vector__XXX
+ SG_ I : 0|32@1- (1,0) [0|0] "" Vector__XXX
+
+BO_ 6 lamp1msg_temp: 8 Vector__XXX
+ SG_ temp_zone1 : 0|8@1+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 5 mastermsg_temp1: 1 Vector__XXX
+ SG_ target_temperature1 : 0|8@1- (1,0) [0|0] "" Vector__XXX
+
+BO_ 13 mastermsg_P: 4 Vector__XXX
+ SG_ P : 0|32@1- (1,0) [0|0] "" Vector__XXX
+
+BO_ 9 lamp2msg_check: 1 Vector__XXX
+ SG_ check : 0|8@1- (1,0) [0|1] "" Vector__XXX
+
+BO_ 0 mastermsg_stop: 3 Vector__XXX
+ SG_ stop_lamp2 : 16|8@1- (1,0) [0|0] "" Vector__XXX
+ SG_ stop_lamp1 : 8|8@1- (1,0) [0|0] "" Vector__XXX
+ SG_ finish_cycling : 0|8@1- (1,0) [0|0] "" Vector__XXX
+
+BO_ 4 mastermsg_check: 1 Vector__XXX
+ SG_ check : 0|8@1- (1,0) [0|1] "" Vector__XXX
+
+BO_ 2 carmsg_check: 1 Vector__XXX
+ SG_ check : 0|8@1- (1,0) [0|1] "" Vector__XXX
+
+BO_ 3 carmsg_finish_cycling: 1 Vector__XXX
+ SG_ finish_cycling : 0|8@1- (1,0) [0|0] "" Vector__XXX
+
+BO_ 20 mastermsg_nodenumber: 8 Vector__XXX
+ SG_ nodenumbercarriage : 16|8@1- (1,0) [0|0] "" Vector__XXX
+ SG_ nodenumberlamp2 : 8|8@1- (1,0) [0|0] "" Vector__XXX
+ SG_ nodenumberlamp1 : 0|8@1- (1,0) [0|0] "" Vector__XXX
+
+BO_ 10 carmsg_position: 4 Vector__XXX
+ SG_ carriage_position : 0|32@1- (1,0) [0|0] "" Vector__XXX
+
+BO_ 1 mastermsg_init: 4 Vector__XXX
+ SG_ initialize_system : 16|8@1- (1,0) [0|1] "" Vector__XXX
+ SG_ cycles : 8|8@1- (1,0) [0|0] "" Vector__XXX
+ SG_ velocity_carriage : 0|8@1- (1,0) [0|0] "" Vector__XXX
+
+BO_ 8 lamp1msg_check: 1 lamp2_subsystem
+ SG_ check : 0|8@1- (1,0) [0|1] "" Vector__XXX
+
+
+
+EV_ D_lamp1: 0 [0|0] "" 0 1 DUMMY_NODE_VECTOR0 Vector__XXX;
+
+EV_ I_lamp1: 0 [0|0] "" 0 2 DUMMY_NODE_VECTOR0 Vector__XXX;
+
+EV_ targetTemp1: 0 [0|0] "" 0 3 DUMMY_NODE_VECTOR0 Vector__XXX;
+
+EV_ P_lamp1: 1 [0|0] "" 0 4 DUMMY_NODE_VECTOR0 Vector__XXX;
+
+EV_ emergencyStop: 0 [0|0] "" 0 5 DUMMY_NODE_VECTOR0 Vector__XXX;
+
+EV_ lamp2pwm: 0 [0|0] "" 0 6 DUMMY_NODE_VECTOR0 Vector__XXX;
+
+EV_ lamp1pwm: 0 [0|0] "" 0 7 DUMMY_NODE_VECTOR0 Vector__XXX;
+
+EV_ carriage_on: 0 [0|1] "" 0 8 DUMMY_NODE_VECTOR0  master;
+
+EV_ carriage_position: 0 [0|0] "" 0 9 DUMMY_NODE_VECTOR1  carriage;
+
+EV_ startcarriage: 0 [0|0] "" 0 10 DUMMY_NODE_VECTOR0 Vector__XXX;
+
+EV_ carriage_speed: 1 [0|500] "" 0 11 DUMMY_NODE_VECTOR0  master;
+
+EV_ cycles: 0 [0|10000] "" 0 12 DUMMY_NODE_VECTOR3  master;
+
+EV_ temp2: 1 [0|300] "" 0 13 DUMMY_NODE_VECTOR3  lamp2_subsystem;
+
+EV_ PWM: 0 [0|255] "" 0 14 DUMMY_NODE_VECTOR3 Vector__XXX;
+
+EV_ temp1: 1 [0|300] "" 0 15 DUMMY_NODE_VECTOR3  lamp2_subsystem;
+
+CM_ BO_ 3221225472 "This is a message for not used signals, created by Vector CANdb++ DBC OLE DB Provider.";
+BA_DEF_  "BusType" STRING ;
+BA_DEF_DEF_  "BusType" "";
+VAL_ temp1 1 "on" 0 "off" ;
+SIG_VALTYPE_ 15 D : 1;
+SIG_VALTYPE_ 14 I : 1;
+SIG_VALTYPE_ 13 P : 1;
+SIG_VALTYPE_ 10 carriage_position : 1;
+

@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<Panel Type="Vector.CANalyzer.Panels.PanelSerializer, Vector.CANalyzer.Panels.Serializer, Version=9.0.65.0, Culture=neutral, PublicKeyToken=null">
+  <Object Type="Vector.CANalyzer.Panels.Runtime.Panel, Vector.CANalyzer.Panels.Common, Version=9.0.65.0, Culture=neutral, PublicKeyToken=null" Name="Panel" Children="Controls" ControlName="panel_light">
+    <Object Type="Vector.CANalyzer.Panels.Design.SwitchControl, Vector.CANalyzer.Panels.CommonControls, Version=9.0.65.0, Culture=neutral, PublicKeyToken=null" Name="SwitchControl1" ControlName="Switch/Indicator">
+      <Property Name="Name">SwitchControl1</Property>
+      <Property Name="Size">56, 63</Property>
+      <Property Name="Location">159, 85</Property>
+      <Property Name="StateCnt">2</Property>
+      <Property Name="SwitchValues">1;2;0;1</Property>
+      <Property Name="ImageFile">..\..\..\..\Public\Documents\Vector\CANoe\9.0 (x64)\CANoe Sample Configurations\Programming\Bitmap_Library\Global\Indicator_2States\mLedgreen_2.bmp</Property>
+      <Property Name="SymbolConfiguration">4;1;database_prueba;;;evLight;1;;;-1</Property>
+      <Property Name="TabIndex">0</Property>
+    </Object>
+    <Property Name="Name">Panel</Property>
+    <Property Name="Size">580, 270</Property>
+  </Object>
+</Panel>

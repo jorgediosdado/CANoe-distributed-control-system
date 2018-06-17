@@ -1,0 +1,197 @@
+/*@!Encoding:1252*/
+
+includes
+{
+  
+}
+variables
+{
+  message lamp1msg_check checkmessage; 
+  message lamp1msg_temp temperatureMessage;  
+  int lamp1nodenumber;  
+  byte lamp1up = 0; 
+  float lampposition = 15; //Defines the position of the lamp along the scan axis  
+  float carriage_position;  
+  
+  //timer simulateNodeDown;
+  int nodeDownAt = 1;  
+  timer regularCheck;
+  int checkerPeriod = 10;
+  
+  //Servo constants
+  float P = 1;
+  float I = 0;
+  float D = 0;
+  
+  float errorTemp;
+  int lamppwm; //Variable interna del nodo
+  mstimer PIDcalculationStep;
+  int PIDstep = 200;
+  
+  //Temperature
+  float targetTemperature; 
+  float zone1Temperature = 25; 
+}
+
+
+on start
+{
+  setTimer(PIDcalculationStep,PIDstep);
+
+}
+
+/*
+//First check, then initialize, then numbering
+on message mastermsg_check {
+  
+    write("Checking lamp");  
+    //Do appropriate checking. Hacer una funcion que es llamada tanto aquí, en el inicio, como cuando hago un regular check desde el propio nodo lámpara  
+    checkmessage.check = 1;
+    output(checkmessage);
+}
+
+
+on message mastermsg_init {
+  
+  if(this.initialize_system == 0x01)
+  {
+    lamp1up = 1;
+  }
+  setTimer(regularCheck,checkerPeriod);
+  //setTimer(simulateNodeDown,nodeDownAt);
+}
+
+
+on message mastermsg_nodenumber 
+{    
+  if(this.nodenumberlamp1 !=0 && this.nodenumberlamp1 != lamp1nodenumber)
+  {    
+   lamp1nodenumber = this.nodenumberlamp1;   
+   write("lamp1 node number =  %i", lamp1nodenumber);    
+  }
+}
+*/
+
+/*
+on message mastermsg_temp1
+{
+  targetTemperature = this.target_temperature1;
+  write("Target Temperature = % f", targetTemperature);
+}
+*/
+
+
+//Especificar en la memoria:
+//- Cómo se manda un float, que luego tengo que recosntruirlo con el Arduino. COn una union!! Explicar esto. 
+
+
+/*
+on message carmsg_position
+{  
+  //En algún momento desacoplar el step de integración, del envío del mensaje carmsg_position
+  carriage_position = this.carriage_position;
+  write("carriage position vista desde lampara = %f",carriage_position);
+}
+*/
+
+
+//THis is a simulation of the PID. In the document, I can do a comparison between this and the real thing. Specify this properly!
+
+
+on timer PIDcalculationStep //Según está, el calculation step marca el cálculo y la aplicacion de la señal de control
+{    
+     
+    if(lamp1up == 1)//Only if lamp is initialized lampUp 
+    {           
+      if(abs(carriage_position - lampposition) < 10) //El nodo se apaga cuando el carro está debajo, para no quemarlo 
+      {      
+           lamppwm = 0;
+           @lamp1pwm = lamppwm;
+           //Apply PWM... In Arduino, here it is only simulated
+      }
+      
+      if(abs(carriage_position - lampposition) > 10)  
+      {   
+      //Supongo que la planta no es conocida, y que voy a aplicar técnica de sintonización del PID no paramétrica (ensayo error, que por eso tiene sentido que ponga los sliders con PID constants).
+      //Para simular esto, la temperatura de mi target será la deseada, con una variable aleatoria. 
+      //Read Values and output to the network      
+        
+      //Hay que leer la temperatura, pero aquí la simulo, como la real, mas el error, más un componente de aleatoriedad. 
+      zone1Temperature = zone1Temperature + errorTemp + random(19) % 19 + (-9); //Random entre -9 y 9
+        
+      temperatureMessage.temp_zone1 = zone1Temperature;      
+      output(temperatureMessage); //Broadcast of the temperature so other nodes know it
+      
+      //Compute errors
+      errorTemp = targetTemperature -  zone1Temperature;
+      //Apply control      
+      lamppwm = errorTemp * P;      
+      //write("target %f, temperature = % f, error = %f ", targetTemperature, zone1Temperature, errorTemp);
+      
+      //saturación PID
+      if (lamppwm > 255)
+      {
+        lamppwm = 255;
+      }
+      if (lamppwm < 0)
+      {
+        lamppwm = 0;
+      }                  
+      
+      //For visualisation purposes only
+      @temp1 = zone1Temperature;
+      @lamp1pwm = lamppwm;
+      //Apply PWM... In Arduino, here it is only simulated
+      }
+  }
+  setTimer(PIDcalculationStep,PIDstep);  
+}
+
+
+/*
+//Esto podría hacerlo directamente el propio nodo, sin necesidad de mandar un mensaje?? 
+on message mastermsg_P
+{
+  P = this.P;  
+}
+on message mastermsg_D
+{
+  D = this.D;  
+}
+on message mastermsg_I
+{
+  I = this.I;  
+}
+*/
+
+/*
+on message mastermsg_stop               //Reasons to have sent this message: 1- Emergency stop (paro total)    2- Cycling has finished(paro total)   
+                                        //3- lamp has not been done the check correctly (stops only this node)  
+{
+  if(this.stop_lamp1 == 1)            
+  {
+    lamppwm = 0;
+    @lamp1pwm = lamppwm;
+    lamp1up = 0;
+    
+  }
+}
+*/
+
+
+
+
+//El checking regular es trabajo de cada nodo individual, mejor que el master preguntando a cada nodo. Porque hay nodos que pueden necesitar unos tiempos de checking más altos 
+//que otros. Hacerlo así damás eficiencia al sistema
+on timer regularCheck 
+{  
+  //Do appropriate checking
+  if(0)
+  {
+    checkmessage.check = 0;
+    output(checkmessage);    
+  }
+}
+
+
+//Contemplar el stop message del nodo master!!

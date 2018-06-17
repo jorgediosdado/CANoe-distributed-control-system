@@ -1,0 +1,191 @@
+/*@!Encoding:1252*/
+includes
+{
+  
+}
+
+variables
+{
+  message carmsg_check carrmsgcheck;
+  message carmsg_position carrmsgposition;
+  message carmsg_finish_cycling carrmsgfinishcycling;
+  
+  int i=0;
+  int carriagenodenumber; 
+  float carriage_position = 0.0;  
+  
+  
+  float avance = 1.0;
+  
+  int forward = 1;  
+  int cyclesdone = 0;
+  int cyclesToDo;
+  float targetVelocity = 0;
+ 
+  int carriageUp;
+  
+  
+  struct velpos {
+      float vel;
+      float pos;
+      float time;
+  };  
+  struct velpos velPosO = {0,0,0};
+    
+  //Time step del carro
+  mstimer carriageAdvancer;
+  int advancerMiliSeconds = 50;
+
+  
+  float currentVelocity; 
+  float axis_length = 60; //inches 
+  float distancetravelled = 0.0;
+  
+  //MRUA inputs  
+  float accel = 30; //in/s^2
+  float deccel = 30;
+  
+  //Calculations from MRUA
+  float accelTime;
+  float accelSpace;  
+  float deccelTime;
+  float deccelSpace;  
+  float slewTime;
+  float slewSpace;  
+  
+}
+
+
+//First check, then initialize, then numbering
+on message mastermsg_check
+{        
+     write("Checking carriage");
+     //Do appropriate checking
+     carrmsgcheck.check = 0x01;
+     output(carrmsgcheck);  
+}
+
+on message mastermsg_init
+{
+  if(this.initialize_system == 0x01)  
+  {    
+    //write("Carriage_receives_message");
+    cyclesToDo = this.cycles;
+    targetVelocity = this.velocity_carriage;   
+    carriageUp = 1; 
+    setTimer(carriageAdvancer,advancerMiliSeconds);
+    
+    //Estos valores que vengan de un mensaje, no hardcodeados en variables
+    //Para determinar las rampas de aceleración, se hace por tiempo. Se calculan lo que tarda el carro en acelerar y decelerar, y se utiliza esto después para 
+    //determinar los tramos de la urva de aceleración
+    
+    accelTime = targetVelocity/accel; //Tiempo en acelerar
+    accelSpace = 0.5*accel*accelTime*accelTime; //Espacio que invierte    
+       
+    deccelTime = targetVelocity/deccel; //Tiempo en decelerar a rate accel
+    deccelSpace = deccelTime*targetVelocity - 0.5*deccel*deccelTime*deccelTime ;    
+    
+    slewSpace = axis_length - accelSpace - deccelSpace;
+    slewTime = slewSpace/targetVelocity;        
+        
+    write("Accel time = %f, Deccel time = %f ",accelTime, accelTime + slewTime);    
+  }  
+}
+
+
+on message mastermsg_nodenumber 
+{  
+  if(this.nodenumbercarriage !=0)
+  {    
+   carriagenodenumber = this.nodenumbercarriage;   
+   write("carriagenodenumber = %i",carriagenodenumber);    
+  }   
+}
+
+
+on message mastermsg_stop   
+{   
+  
+   write("recibido stop");
+   if(this.finish_cycling == 1){    
+   carriageUp = 0;    
+  }
+}
+
+on timer carriageAdvancer
+{  
+
+   //write("movingOnFlag = %i",carriageUp);  
+   if(cyclesdone < cyclesToDo && carriageUp == 1)           //Only if carriage is initialized carriageUp
+   {    
+     if ((forward == 1 && carriage_position >= axis_length) || (forward == -1 && carriage_position <= 0))
+      {                
+        write("Time en llegar = %f", velPosO.time);
+        forward = - forward;       
+        cyclesdone++;
+        velPosO.vel = 0; //La velocidad es 0 otra vez, y vuelve a entrar en la primera condicion del if de update kinematics
+        velPosO.time =0; //El tiempo es 0 otra vez. EL tiempo se resetea cada ida o venida delc arro
+      }      
+      carriage_position = updateKinematics(velPosO, forward);     
+      carrmsgposition.carriage_position =carriage_position;      
+      output(carrmsgposition);   
+      setTimer(carriageAdvancer,advancerMiliSeconds);        
+  }
+  
+  if(cyclesdone == cyclesToDo && carriageUp == 1)           //Only if carriage is initialized carriageUp
+  {
+    carriageUp = 0;                                         //Message is sent to announce the cycling is completed
+    carrmsgfinishcycling.finish_cycling = 1;
+    output(carrmsgfinishcycling);
+  }
+}
+
+
+
+float updateKinematics(struct velpos velPosO, int forward)
+{
+  float newPosition;
+  float currentVelocity;
+  
+    
+   //write("velocidad = %f, posicion = %f, Tiempo = %f forward = %i, cyclesdone =  %i", velPosO.vel, velPosO.pos, velPosO.time, forward, cyclesdone);
+  
+  if (velPosO.time < accelTime) //ramping up
+  {     
+    
+    //write("ramp up");    
+    currentVelocity = velPosO.vel + accel*advancerMiliSeconds*0.001;
+    velPosO.vel = currentVelocity;
+    
+    newPosition = velPosO.pos + forward * currentVelocity*(advancerMiliSeconds*0.001) + 0.5*accel*(advancerMiliSeconds*0.001)*(advancerMiliSeconds*0.001);    
+    velPosO.pos = newPosition;
+    
+    velPosO.time += advancerMiliSeconds*0.001;
+    
+  }  
+  if((velPosO.time > accelTime)  && (velPosO.time < accelTime + slewTime)) //constant velocity
+  {    
+    //write("SLEWWW");
+    velPosO.vel = targetVelocity;    
+    newPosition = velPosO.pos + forward * velPosO.vel * (advancerMiliSeconds*0.001);    
+    velPosO.pos = newPosition;
+    velPosO.time += advancerMiliSeconds*0.001;
+    
+  }  
+  
+  
+  if(velPosO.time >= accelTime + slewTime) //constant velocity
+   {    
+    //write("deccel"); 
+    currentVelocity = velPosO.vel - accel*advancerMiliSeconds*0.001;
+    velPosO.vel = currentVelocity;    
+    newPosition = velPosO.pos + forward * currentVelocity*(advancerMiliSeconds*0.001) - 0.5*accel*(advancerMiliSeconds*0.001)*(advancerMiliSeconds*0.001);    
+    velPosO.pos = newPosition;
+    velPosO.time += advancerMiliSeconds*0.001;
+   }  
+  
+  
+  //time is hardcoded with the timer. It's an input  
+  return newPosition; 
+  
+}
